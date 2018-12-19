@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import logo from "./logo.svg";
 import "./App.css";
-import { Table, TableColumn, TableColumnType } from "./components/table";
+import { Table, TableColumn, TableColumnType } from "./components/table/table";
 import dataStore from "./data-store";
 
 class App extends Component {

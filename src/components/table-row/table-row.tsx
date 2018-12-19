@@ -10,14 +10,13 @@ import {
   getCheckButton,
   getLabeledButton
 } from "./buttons-helper";
-
-import { TableColumn, TableColumnType } from "../table";
+import { TableColumn, TableColumnType } from "../table/table";
 
 import "./table-row.css";
 
 export enum RowState {
   Info,
-  New,
+  Blank,
   Edit,
   AddNew,
   ConfirmDelete
@@ -35,7 +34,7 @@ export interface TableRowProps<T> {
 @observer
 export class TableRow<T> extends Component<TableRowProps<T>> {
   @observable rowState = RowState.Info;
-  @observable rowData: T = {} as T;
+  @observable editedRowData: T = {} as T;
   undoEditTemp: T = {} as T;
 
   constructor(props: TableRowProps<T>) {
@@ -50,12 +49,12 @@ export class TableRow<T> extends Component<TableRowProps<T>> {
         return this.getInfoRow(data, columns);
       case RowState.AddNew:
         return this.getAddNewRow(columns);
-      case RowState.New:
-        return this.getNewRow(columns);
+      case RowState.Blank:
+        return this.getBlankRow(columns);
       case RowState.ConfirmDelete:
         return this.getConfirmDeleteRow(data);
       case RowState.Edit:
-        return this.getEditRow(this.rowData, columns);
+        return this.getEditRow(data, columns);
     }
   }
 
@@ -64,13 +63,16 @@ export class TableRow<T> extends Component<TableRowProps<T>> {
       <div className="row">
         {Object.keys(data).map(key => {
           const column = columns.find(col => col.key === key);
-          const cellStyle = column && column.cellStyle;
-          switch (column && column.type) {
+          if (!column) return null;
+
+          const rowValue = (data as any)[key];
+          const cellStyle = column.cellStyle;
+          switch (column.type) {
             case TableColumnType.Text:
             case TableColumnType.ReadOnly:
               return (
-                <span key={key} className="cell" style={cellStyle}>
-                  {(data as any)[key]}
+                <span key={key} className="cell" style={cellStyle} title={rowValue}>
+                  {rowValue}
                 </span>
               );
             case TableColumnType.Image:
@@ -79,7 +81,7 @@ export class TableRow<T> extends Component<TableRowProps<T>> {
                   key={key}
                   className="cell"
                   style={cellStyle}
-                  src={(data as any)[key]}
+                  src={rowValue}
                 />
               );
           }
@@ -114,13 +116,13 @@ export class TableRow<T> extends Component<TableRowProps<T>> {
           return <span key={column.key} className="cell" style={cellStyle} />;
         })}
         <div className="action-buttons">
-          {getAddButton(() => this.setRowState(RowState.New))}
+          {getLabeledButton("Add New Contact", () => this.setRowState(RowState.Blank))}
         </div>
       </div>
     );
   }
 
-  private getNewRow(columns: TableColumn[]) {
+  private getBlankRow(columns: TableColumn[]) {
     return (
       <div className="row">
         {columns.map(column => {
@@ -139,7 +141,7 @@ export class TableRow<T> extends Component<TableRowProps<T>> {
               style={column.cellStyle}
               className="cell edit"
               type="text"
-              value={(this.rowData as any)[column.key] || ""}
+              value={(this.editedRowData as any)[column.key] || ""}
               placeholder={column.header}
               onChange={this.onPropertyEdited(column.key)}
             />
@@ -147,8 +149,9 @@ export class TableRow<T> extends Component<TableRowProps<T>> {
         })}
         <div className="action-buttons">
           {getCheckButton(() => {
-            if (this.props.saveAction) this.props.saveAction(this.rowData);
-            this.rowData = {} as T;
+            if (this.props.saveAction)
+              this.props.saveAction(this.editedRowData);
+            this.editedRowData = {} as T;
             this.setRowState(RowState.AddNew);
           })}
         </div>
@@ -156,58 +159,67 @@ export class TableRow<T> extends Component<TableRowProps<T>> {
     );
   }
 
-  @action
   private getEditRow(data: T, columns: TableColumn[]) {
     this.undoEditTemp = Object.assign({}, data);
+    if (Object.keys(this.editedRowData).length === 0) {
+      Object.keys(data).forEach(key => {
+        (this.editedRowData as any)[key] = (data as any)[key];
+      });
+    }
     return (
       <div className="row">
         {columns.map(column => {
-          const cellStyle = column.cellStyle;
-          switch (column.type) {
-            case TableColumnType.Text:
-              return (
-                <input
-                  key={column.key}
-                  style={column.cellStyle}
-                  className="cell"
-                  type="text"
-                  value={(this.rowData as any)[column.key] || ""}
-                  onChange={this.onPropertyEdited(column.key)}
-                />
-              );
+          if (column.type === TableColumnType.Image)
+            return (
+              <div
+                key={column.key}
+                style={column.cellStyle}
+                className="cell edit"
+              />
+            );
 
-            case TableColumnType.ReadOnly:
-              return (
-                <span key={column.key} className="cell" style={cellStyle}>
-                  {(this.rowData as any)[column.key]}
-                </span>
-              );
+          if (column.type === TableColumnType.ReadOnly)
+            return (
+              <span key={column.key} className="cell" style={column.cellStyle}>
+                {(data as any)[column.key]}
+              </span>
+            );
 
-            case TableColumnType.Image:
-              return (
-                <img
-                  key={column.key}
-                  className="cell"
-                  style={cellStyle}
-                  src={(this.rowData as any)[column.key]}
-                />
-              );
-          }
+          return (
+            <input
+              key={column.key}
+              style={column.cellStyle}
+              className="cell edit"
+              type="text"
+              value={
+                (this.editedRowData as any)[column.key] ||
+                (data as any)[column.key] ||
+                ""
+              }
+              placeholder={column.header}
+              onChange={this.onPropertyEdited(column.key)}
+            />
+          );
         })}
         <div className="action-buttons">
-          {getCheckButton(() => {
-            if (this.props.editAction) this.props.editAction(this.rowData);
-            this.rowData = {} as T;
-          })}
+          {getCheckButton(() => this.applyEdit())}
           {getCancelButton(() => this.cancelEdit())}
         </div>
       </div>
     );
   }
 
+  applyEdit = () => {
+    if (this.props.editAction) {
+      this.props.editAction(this.editedRowData);
+    }
+    this.editedRowData = {} as T;
+    this.setRowState(RowState.Info);
+  };
+
   @action
   private cancelEdit() {
-    this.rowData = this.undoEditTemp;
+    this.editedRowData = {} as T;// this.undoEditTemp;
     this.setRowState(RowState.Info);
   }
 
@@ -220,6 +232,6 @@ export class TableRow<T> extends Component<TableRowProps<T>> {
   onPropertyEdited = (key: string) => (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
-    (this.rowData as any)[key] = event.target.value;
+    (this.editedRowData as any)[key] = event.target.value;
   };
 }

@@ -1,4 +1,4 @@
-import { Contact } from "./contact";
+import { Contact } from "./models/contact";
 import { observable, action, toJS } from "mobx";
 import { url } from "gravatar";
 
@@ -30,10 +30,11 @@ class DataStore {
 
   @action
   public editContact = (editedContact: Contact) => {
-    const contact = this.contacts.find(
+    let contact = this.contacts.find(
       contact => contact.email === editedContact.email
     );
     if (contact) {
+      contact = editedContact;
       localStorage.setItem("contacts", JSON.stringify(toJS(this.contacts)));
     }
   };

@@ -1,7 +1,6 @@
 import React, { Component } from "react";
 import { observer } from "mobx-react";
-
-import { TableRow, RowState } from "./row/table-row";
+import { RowState, TableRow } from "../table-row/table-row";
 
 export enum TableColumnType {
   Text,

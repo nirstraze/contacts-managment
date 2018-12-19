@@ -13,6 +13,9 @@
   vertical-align: -webkit-baseline-middle;
   padding-left: 5px;
   padding-right: 5px;
+  white-space: nowrap; 
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cell.edit {
