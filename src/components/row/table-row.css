@@ -1,0 +1,37 @@
+.row {
+  height: 55px;
+  border-bottom: 1px solid lightgray;
+  display: flex;
+  align-items: center;
+}
+
+.row > .cell {
+  font-size: 14px;
+  width: 150px;
+  display: inline-block;
+  font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+  vertical-align: -webkit-baseline-middle;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+.cell.edit {
+  height: 25px;
+}
+
+.row.header {
+  background: #00b6ff;
+  color: white;
+}
+
+.action-buttons {
+  margin-left: 50px;
+}
+
+.action-button {
+  margin: 5px;
+}
+
+.secondaryColor {
+  background: green;
+}

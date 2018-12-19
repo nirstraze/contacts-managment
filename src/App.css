@@ -1,0 +1,25 @@
+/* .App {
+  text-align: center;
+} */
+
+.app-header{
+  display: flex;
+  height: 70px;
+  align-items: center;
+  font-size: 40px;
+}
+
+.app-header>.logo{
+  margin: 10px;
+}
+
+.app-header>.logo{
+  font-size: 40px;
+}
+
+
+
+
+
+
+
